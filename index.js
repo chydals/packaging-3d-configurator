@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import MainApp from './MainApp'; // This looks for MainApp.js in the same folder
-import './App.css'; // This looks for App.css in the same folder
+import MainApp from './MainApp';
+import './App.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
