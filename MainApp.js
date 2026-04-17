@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import Viewer3D from './components/Viewer3D';
-import Viewer2D from './components/Viewer2D';
-import { getMailerBoxDieline } from './logic/boxCalculations';
-import { exportDielinePDF, exportDielineAI } from './logic/exportSystem';
+import Viewer3D from './src/components/Viewer3D';
+import Viewer2D from './src/components/Viewer2D';
+import { getMailerBoxDieline } from './src/logic/boxCalculations';
+import { exportDielinePDF, exportDielineAI } from './src/logic/exportSystem';
 
 const MainApp = () => {
   // 1. Setup State for the inputs
