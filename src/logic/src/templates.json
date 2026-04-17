@@ -1,0 +1,8 @@
+{
+  "mailer_box": {
+    "name": "Flip Top Mailer",
+    "id": "150010",
+    "min_dims": [50, 50, 20],
+    "default_material": "E-flute Corrugated"
+  }
+}
