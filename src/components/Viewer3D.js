@@ -1,46 +1,38 @@
 import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei';
 
-// This component builds the actual 3D Box
-const BoxMesh = ({ dimensions, thickness, isOpen }) => {
-  const meshRef = useRef();
+const BoxMesh = ({ dimensions, isOpen }) => {
   const { length, width, height } = dimensions;
-
-  // Simple animation logic to "pulse" or rotate if needed
-  useFrame((state) => {
-    if (!isOpen) {
-      meshRef.current.rotation.y += 0.005; // Slow 360 rotation
-    }
-  });
+  // Lid rotation: 0 if closed, -2 radians if open
+  const lidRotation = isOpen ? -2 : 0;
 
   return (
-    <mesh ref={meshRef}>
-      {/* BoxGeometry creates the 3D shape based on user inputs */}
-      <boxGeometry args={[length, height, width]} />
-      <meshStandardMaterial color="#f5f5dc" roughness={0.8} /> 
-      {/* #f5f5dc is a cardboard-like cream color */}
-    </mesh>
+    <group scale={0.05}> {/* Scaling down so it fits the screen */}
+      {/* Base of the box */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[width, height, length]} />
+        <meshStandardMaterial color="#d2b48c" />
+      </mesh>
+      
+      {/* Lid (Top panel that rotates) */}
+      <mesh position={[0, height / 2, -length / 2]} rotation={[lidRotation, 0, 0]}>
+        <boxGeometry args={[width, 2, length]} />
+        <meshStandardMaterial color="#e3c9a1" />
+      </mesh>
+    </group>
   );
 };
 
-// The Main Viewer component
 const Viewer3D = ({ boxData }) => {
   return (
-    <div style={{ width: '100%', height: '400px', background: '#f0f0f0' }}>
+    <div style={{ width: '100%', height: '400px', background: '#f0f0f0', borderRadius: '8px' }}>
       <Canvas>
-        <PerspectiveCamera makeDefault position={[500, 500, 500]} />
-        <OrbitControls enablePan={true} enableZoom={true} makeDefault />
-        <Environment preset="city" />
-        
+        <PerspectiveCamera makeDefault position={[15, 15, 15]} />
+        <OrbitControls />
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
-
-        <BoxMesh 
-          dimensions={boxData.dimensions} 
-          thickness={boxData.thickness}
-          isOpen={boxData.isOpen}
-        />
+        <BoxMesh dimensions={boxData.dimensions} isOpen={boxData.isOpen} />
       </Canvas>
     </div>
   );
