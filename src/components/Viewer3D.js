@@ -1,29 +1,22 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Float } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei';
 
 const BoxMesh = ({ dimensions, isOpen }) => {
   const { length, width, height } = dimensions;
-  // Lid rotation: 0 radians (closed) to -2 radians (open)
-  const lidRotation = isOpen ? -2 : 0;
+  const lidRot = isOpen ? -Math.PI / 1.5 : 0; // Rotates the lid back when open
 
   return (
-    <group scale={0.05}> {/* Scale down to fit the viewport */}
-      {/* Base Body */}
+    <group scale={0.04}>
+      {/* Main Base */}
       <mesh position={[0, 0, 0]} castShadow>
         <boxGeometry args={[width, height, length]} />
-        <meshStandardMaterial color="#d2b48c" roughness={0.8} />
+        <meshStandardMaterial color="#e5e7eb" roughness={0.4} metalness={0.1} />
       </mesh>
-      
-      {/* Hinged Lid */}
-      <mesh 
-        position={[0, height / 2, -length / 2]} 
-        rotation={[lidRotation, 0, 0]}
-        castShadow
-      >
-        {/* We adjust the pivot point by shifting the geometry */}
-        <boxGeometry args={[width, 2, length]} />
-        <meshStandardMaterial color="#e3c9a1" roughness={0.8} />
+      {/* Top Lid */}
+      <mesh position={[0, height / 2, -length / 2]} rotation={[lidRot, 0, 0]} castShadow>
+        <boxGeometry args={[width, 4, length]} />
+        <meshStandardMaterial color="#f3f4f6" roughness={0.4} />
       </mesh>
     </group>
   );
@@ -31,19 +24,18 @@ const BoxMesh = ({ dimensions, isOpen }) => {
 
 const Viewer3D = ({ boxData }) => {
   return (
-    <div style={{ width: '100%', height: '450px', background: '#f8f9fa', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <Canvas shadows>
-        <color attach="background" args={['#f8f9fa']} />
-        <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={50} />
-        <OrbitControls makeDefault minDistance={5} maxDistance={30} />
-        
-        {/* Lighting Setup */}
-        <ambientLight intensity={0.7} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
-        
-        <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
-          <BoxMesh dimensions={boxData.dimensions} isOpen={boxData.isOpen} />
-        </Float>
+        <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={40} />
+        <OrbitControls makeDefault enableDamping minDistance={5} maxDistance={25} />
+        <ambientLight intensity={0.8} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1.5} castShadow />
+        <Environment preset="neutral" />
+        <BoxMesh dimensions={boxData.dimensions} isOpen={boxData.isOpen} />
+        <ContactShadows position={[0, -2, 0]} opacity={0.25} scale={20} blur={2} far={4.5} />
+      </Canvas>
+    </div>
+  );
+};
 
-        {/* Professional Floor Shadow */}
-        <ContactShadows position={[0, -2, 0]} opacity={0.4
+export default Viewer3D;
