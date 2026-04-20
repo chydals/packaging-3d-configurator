@@ -1,71 +1,69 @@
 import React, { useState } from 'react';
 import Viewer3D from './components/Viewer3D';
 import Viewer2D from './components/Viewer2D';
-import { getMailerBoxDieline } from './logic/boxCalculations';
-import { exportDielinePDF, exportDielineAI } from './logic/exportSystem';
+import './App.css';
 
-const [template, setTemplate] = useState("mailer"); // New state for library
+const MainApp = () => {
+  const [dimensions, setDimensions] = useState({ length: 200, width: 150, height: 60 });
+  const [isOpen, setIsOpen] = useState(false);
+  const [template, setTemplate] = useState("mailer");
 
-// Add this dropdown inside your Control Panel div:
-<label> Select Template: </label>
-<select value={template} onChange={(e) => setTemplate(e.target.value)}>
-  <option value="mailer">Flip Top Mailer</option>
-  <option value="shipping">Standard Shipping Box</option>
-  <option value="folder">Flat Presentation Folder</option>
-</select>
-
-  // 2. Handle input changes
   const updateDim = (key, value) => {
-    setDimensions({ ...dimensions, [key]: parseInt(value) });
+    setDimensions({ ...dimensions, [key]: parseInt(value) || 0 });
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
-      <h1>Packaging 3D Configurator</h1>
-
-     {/* Control Panel */}
-<div style={{ background: '#d1e3f0', padding: '15px', borderRadius: '8px', color: '#34495e' }}>
-  <h3>Adjust Dimensions (mm)</h3>
-  
-  {/* The Wrapper for the selector */}
-  <div style={{ marginBottom: '15px' }}>
-    <label> Select Template: </label>
-    <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-      <option value="mailer">Flip Top Mailer</option>
-      <option value="shipping">Standard Shipping Box</option>
-      <option value="folder">Flat Presentation Folder</option>
-    </select>
-  </div>
-
-  {/* Dimension Inputs */}
-  <label>Length: </label>
-  <input type="number" value={dimensions.length} onChange={(e) => updateDim('length', e.target.value)} />
-  
-  <label> Width: </label>
-  <input type="number" value={dimensions.width} onChange={(e) => updateDim('width', e.target.value)} />
-  
-  <label> Height: </label>
-  <input type="number" value={dimensions.height} onChange={(e) => updateDim('height', e.target.value)} />
-  
-  <button onClick={() => setIsOpen(!isOpen)} style={{ marginLeft: '10px' }}>
-    {isOpen ? "Close Box" : "Open Box"}
-  </button>
-</div>
-
-      {/* Main Viewport */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <div>
-          <h3>2D Dieline Template</h3>
-          <Viewer2D boxData={{ dimensions, thickness, mode }} />
-          <button onClick={() => exportDielineAI(dimensions)}>Download AI</button>
-          <button onClick={() => exportDielinePDF(dimensions)}>Download PDF</button>
-        </div>
+    <div className="app-container" style={{ display: 'flex', height: '100vh', fontFamily: 'sans-serif' }}>
+      
+      {/* 1. SIDEBAR CONTROLS */}
+      <div className="sidebar" style={{ width: '350px', background: '#f0f4f8', padding: '25px', borderRight: '1px solid #d1e3f0' }}>
+        <h2 style={{ color: '#2c3e50' }}>Box Configurator</h2>
         
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Template</label>
+          <select 
+            value={template} 
+            onChange={(e) => setTemplate(e.target.value)}
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #adcbe3' }}
+          >
+            <option value="mailer">Flip Top Mailer</option>
+            <option value="shipping">Standard Shipping Box</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <label>Length (mm):
+            <input type="number" value={dimensions.length} onChange={(e) => updateDim('length', e.target.value)} style={{ width: '100%', padding: '8px' }} />
+          </label>
+          <label>Width (mm):
+            <input type="number" value={dimensions.width} onChange={(e) => updateDim('width', e.target.value)} style={{ width: '100%', padding: '8px' }} />
+          </label>
+          <label>Height (mm):
+            <input type="number" value={dimensions.height} onChange={(e) => updateDim('height', e.target.value)} style={{ width: '100%', padding: '8px' }} />
+          </label>
+        </div>
+
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          style={{ marginTop: '25px', width: '100%', padding: '12px', background: '#3498db', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+        >
+          {isOpen ? "Close Box" : "Open Box"}
+        </button>
+      </div>
+
+      {/* 2. MAIN VIEWPORT AREA */}
+      <div className="viewer-area" style={{ flexGrow: 1, padding: '30px', background: '#ffffff', overflowY: 'auto' }}>
+        <div style={{ marginBottom: '40px' }}>
+          <h3>3.D Preview (Studio View)</h3>
+          <Viewer3D boxData={{ dimensions, isOpen }} />
+        </div>
+
         <div>
-          <h3>3D Preview</h3>
-          <Viewer3D boxData={{ dimensions, thickness, isOpen }} />
+          <h3>2.D Technical Dieline</h3>
+          <Viewer2D boxData={{ dimensions }} />
         </div>
       </div>
+
     </div>
   );
 };
