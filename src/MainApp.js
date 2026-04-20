@@ -4,12 +4,15 @@ import Viewer2D from './components/Viewer2D';
 import { getMailerBoxDieline } from './logic/boxCalculations';
 import { exportDielinePDF, exportDielineAI } from './logic/exportSystem';
 
-const MainApp = () => {
-  // 1. Setup State for the inputs
-  const [dimensions, setDimensions] = useState({ length: 200, width: 150, height: 60 });
-  const [thickness, setThickness] = useState(3);
-  const [mode, setMode] = useState("Inner");
-  const [isOpen, setIsOpen] = useState(false);
+const [template, setTemplate] = useState("mailer"); // New state for library
+
+// Add this dropdown inside your Control Panel div:
+<label> Select Template: </label>
+<select value={template} onChange={(e) => setTemplate(e.target.value)}>
+  <option value="mailer">Flip Top Mailer</option>
+  <option value="shipping">Standard Shipping Box</option>
+  <option value="folder">Flat Presentation Folder</option>
+</select>
 
   // 2. Handle input changes
   const updateDim = (key, value) => {
