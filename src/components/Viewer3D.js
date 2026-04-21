@@ -1,63 +1,63 @@
-import React, { useRef } from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Float } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei';
 
-// A single cardboard panel with a pivot at the edge
-const HingePanel = ({ args, position, rotation, children, color = "#e5e7eb" }) => (
+// A panel that rotates around its bottom edge (the hinge)
+const FoldablePanel = ({ args, position, rotation, children, color = "#e5e7eb" }) => (
   <group position={position} rotation={rotation}>
     <mesh position={[0, args[1] / 2, 0]} castShadow receiveShadow>
       <boxGeometry args={args} />
-      <meshStandardMaterial color={color} roughness={0.6} metalness={0.1} />
+      <meshStandardMaterial color={color} roughness={0.8} />
     </mesh>
     {children}
   </group>
 );
 
-const PacdoraBox = ({ dimensions, isOpen }) => {
+const PacdoraModel = ({ dimensions, foldProgress }) => {
   const { length: l, width: w, height: h } = dimensions;
-  const s = 0.05; // Scaling for the viewport
-  const fold = isOpen ? 0 : Math.PI / 2; // 0 is flat, 90deg is folded
+  const s = 0.04; // Scale factor
+  
+  // Progress 0 = Flat sheet; Progress 1 = Closed box
+  const angle = (foldProgress / 100) * (Math.PI / 2); 
 
   return (
-    <group scale={s} rotation={[0, 0, 0]}>
-      {/* BOTTOM (The stationary base) */}
+    <group scale={s}>
+      {/* 1. BOTTOM BASE (Fixed) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[w, l]} />
         <meshStandardMaterial color="#d1d5db" side={2} />
       </mesh>
 
-      {/* BACK PANEL + LID */}
-      <HingePanel args={[w, h, 1]} position={[0, 0, -l/2]} rotation={[-fold, 0, 0]}>
-        {/* LID (Hinged to top of Back Panel) */}
-        <HingePanel args={[w, 1, l]} position={[0, h, 0]} rotation={[-fold, 0, 0]} color="#f3f4f6" />
-      </HingePanel>
+      {/* 2. BACK PANEL & LID (Double Hinge) */}
+      <FoldablePanel args={[w, h, 1]} position={[0, 0, -l/2]} rotation={[-angle, 0, 0]}>
+        <FoldablePanel args={[w, 1, l]} position={[0, h, 0]} rotation={[-angle, 0, 0]} color="#f3f4f6" />
+      </FoldablePanel>
 
-      {/* FRONT PANEL */}
-      <HingePanel args={[w, h, 1]} position={[0, 0, l/2]} rotation={[fold, 0, 0]} />
+      {/* 3. FRONT PANEL */}
+      <FoldablePanel args={[w, h, 1]} position={[0, 0, l/2]} rotation={[angle, 0, 0]} />
 
-      {/* LEFT PANEL */}
-      <HingePanel args={[l, h, 1]} position={[-w/2, 0, 0]} rotation={[0, -Math.PI / 2, fold]} />
+      {/* 4. LEFT SIDE */}
+      <FoldablePanel args={[l, h, 1]} position={[-w/2, 0, 0]} rotation={[0, -Math.PI / 2, angle]} />
 
-      {/* RIGHT PANEL */}
-      <HingePanel args={[l, h, 1]} position={[w/2, 0, 0]} rotation={[0, Math.PI / 2, fold]} />
+      {/* 5. RIGHT SIDE */}
+      <FoldablePanel args={[l, h, 1]} position={[w/2, 0, 0]} rotation={[0, Math.PI / 2, angle]} />
     </group>
   );
 };
 
-const Viewer3D = ({ boxData }) => {
+const Viewer3D = ({ boxData, foldProgress }) => {
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[12, 10, 12]} fov={40} />
-        <OrbitControls makeDefault enableDamping minPolarAngle={0} maxPolarAngle={Math.PI / 1.75} />
-        
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
-        <Environment preset="city" />
-
-        <PacdoraBox dimensions={boxData.dimensions} isOpen={boxData.isOpen} />
-        
-        <ContactShadows position={[0, -0.1, 0]} opacity={0.4} scale={20} blur={2} />
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={40} />
+          <OrbitControls makeDefault enableDamping />
+          <Environment preset="city" />
+          <ambientLight intensity={0.6} />
+          <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} castShadow />
+          <PacdoraModel dimensions={boxData.dimensions} foldProgress={foldProgress} />
+          <ContactShadows position={[0, -0.01, 0]} opacity={0.4} scale={20} blur={2} />
+        </Suspense>
       </Canvas>
     </div>
   );
