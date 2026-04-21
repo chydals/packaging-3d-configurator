@@ -1,65 +1,57 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei';
 
-// A panel that rotates around its bottom edge (the hinge)
-const FoldablePanel = ({ args, position, rotation, children, color = "#e5e7eb" }) => (
+const materialColors = {
+  corrugated: "#a68a64",
+  kraft: "#8b7355",
+  white: "#ffffff"
+};
+
+const PacdoraHinge = ({ args, position, rotation, children, color }) => (
   <group position={position} rotation={rotation}>
-    <mesh position={[0, args[1] / 2, 0]} castShadow receiveShadow>
+    <mesh position={[0, args[1] / 2, 0]} castShadow>
       <boxGeometry args={args} />
-      <meshStandardMaterial color={color} roughness={0.8} />
+      <meshStandardMaterial color={color} roughness={0.9} />
     </mesh>
     {children}
   </group>
 );
 
-const PacdoraModel = ({ dimensions, foldProgress }) => {
-  const { length: l, width: w, height: h } = dimensions;
-  const s = 0.04; // Scale factor
-  
-  // Progress 0 = Flat sheet; Progress 1 = Closed box
-  const angle = (foldProgress / 100) * (Math.PI / 2); 
-
-  return (
-    <group scale={s}>
-      {/* 1. BOTTOM BASE (Fixed) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[w, l]} />
-        <meshStandardMaterial color="#d1d5db" side={2} />
-      </mesh>
-
-      {/* 2. BACK PANEL & LID (Double Hinge) */}
-      <FoldablePanel args={[w, h, 1]} position={[0, 0, -l/2]} rotation={[-angle, 0, 0]}>
-        <FoldablePanel args={[w, 1, l]} position={[0, h, 0]} rotation={[-angle, 0, 0]} color="#f3f4f6" />
-      </FoldablePanel>
-
-      {/* 3. FRONT PANEL */}
-      <FoldablePanel args={[w, h, 1]} position={[0, 0, l/2]} rotation={[angle, 0, 0]} />
-
-      {/* 4. LEFT SIDE */}
-      <FoldablePanel args={[l, h, 1]} position={[-w/2, 0, 0]} rotation={[0, -Math.PI / 2, angle]} />
-
-      {/* 5. RIGHT SIDE */}
-      <FoldablePanel args={[l, h, 1]} position={[w/2, 0, 0]} rotation={[0, Math.PI / 2, angle]} />
-    </group>
-  );
-};
-
 const Viewer3D = ({ boxData, foldProgress }) => {
+  const { length: l, width: w, height: h } = boxData.dimensions;
+  const color = materialColors[boxData.material] || "#fff";
+  const angle = (foldProgress / 100) * (Math.PI / 2);
+  const s = 0.04;
+
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <Canvas shadows>
-        <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[12, 12, 12]} fov={40} />
-          <OrbitControls makeDefault enableDamping />
-          <Environment preset="city" />
-          <ambientLight intensity={0.6} />
-          <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} castShadow />
-          <PacdoraModel dimensions={boxData.dimensions} foldProgress={foldProgress} />
-          <ContactShadows position={[0, -0.01, 0]} opacity={0.4} scale={20} blur={2} />
-        </Suspense>
-      </Canvas>
-    </div>
+    <Canvas shadows>
+      <PerspectiveCamera makeDefault position={[10, 10, 10]} />
+      <OrbitControls makeDefault />
+      <Environment preset="studio" />
+      <ambientLight intensity={0.5} />
+      
+      <group scale={s}>
+        <mesh rotation={[-Math.PI/2, 0, 0]} receiveShadow>
+          <planeGeometry args={[w, l]} />
+          <meshStandardMaterial color={color} side={2} />
+        </mesh>
+        
+        {/* Back & Lid */}
+        <PacdoraHinge args={[w, h, 1]} position={[0, 0, -l/2]} rotation={[-angle, 0, 0]} color={color}>
+          <PacdoraHinge args={[w, 1, l]} position={[0, h, 0]} rotation={[-angle, 0, 0]} color={color} />
+        </PacdoraHinge>
+
+        {/* Front */}
+        <PacdoraHinge args={[w, h, 1]} position={[0, 0, l/2]} rotation={[angle, 0, 0]} color={color} />
+        
+        {/* Sides */}
+        <PacdoraHinge args={[l, h, 1]} position={[-w/2, 0, 0]} rotation={[0, -Math.PI/2, angle]} color={color} />
+        <PacdoraHinge args={[l, h, 1]} position={[w/2, 0, 0]} rotation={[0, Math.PI/2, angle]} color={color} />
+      </group>
+
+      <ContactShadows position={[0, -0.1, 0]} opacity={0.4} scale={20} blur={2.5} />
+    </Canvas>
   );
 };
 
