@@ -1,57 +1,109 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei';
 
-const materialColors = {
-  corrugated: "#a68a64",
-  kraft: "#8b7355",
-  white: "#ffffff"
+/** * Color Mapping based on material selection
+ */
+const materialSettings = {
+  'white-cardboard': { color: '#ffffff', roughness: 0.8, metalness: 0.0 },
+  'dark-kraft': { color: '#5d4037', roughness: 0.9, metalness: 0.0 },
+  'f-flute': { color: '#d7ccc8', roughness: 0.9, metalness: 0.0 },
+  'e-flute': { color: '#bcaaa4', roughness: 0.9, metalness: 0.0 },
+  'b-flute': { color: '#8d6e63', roughness: 0.9, metalness: 0.0 },
 };
 
-const PacdoraHinge = ({ args, position, rotation, children, color }) => (
+/**
+ * A Hinge Component: 
+ * Groups panels so they rotate from the correct edge (hinge point)
+ */
+const Hinge = ({ args, position, rotation, children, matProps }) => (
   <group position={position} rotation={rotation}>
-    <mesh position={[0, args[1] / 2, 0]} castShadow>
+    <mesh position={[0, args[1] / 2, 0]} castShadow receiveShadow>
       <boxGeometry args={args} />
-      <meshStandardMaterial color={color} roughness={0.9} />
+      <meshStandardMaterial {...matProps} />
     </mesh>
     {children}
   </group>
 );
 
-const Viewer3D = ({ boxData, foldProgress }) => {
-  const { length: l, width: w, height: h } = boxData.dimensions;
-  const color = materialColors[boxData.material] || "#fff";
+const FoldableBox = ({ dimensions, material, foldProgress }) => {
+  const { length, width, height } = dimensions;
+  const matProps = materialSettings[material] || materialSettings['white-cardboard'];
+  
+  // Convert 0-100 progress to Radians (0 to 90 degrees)
   const angle = (foldProgress / 100) * (Math.PI / 2);
-  const s = 0.04;
+  const s = 0.035; // Global scale to fit in the window
 
   return (
-    <Canvas shadows>
-      <PerspectiveCamera makeDefault position={[10, 10, 10]} />
-      <OrbitControls makeDefault />
-      <Environment preset="studio" />
-      <ambientLight intensity={0.5} />
-      
-      <group scale={s}>
-        <mesh rotation={[-Math.PI/2, 0, 0]} receiveShadow>
-          <planeGeometry args={[w, l]} />
-          <meshStandardMaterial color={color} side={2} />
-        </mesh>
-        
-        {/* Back & Lid */}
-        <PacdoraHinge args={[w, h, 1]} position={[0, 0, -l/2]} rotation={[-angle, 0, 0]} color={color}>
-          <PacdoraHinge args={[w, 1, l]} position={[0, h, 0]} rotation={[-angle, 0, 0]} color={color} />
-        </PacdoraHinge>
+    <group scale={s} position={[0, - (height * s) / 2, 0]}>
+      {/* 1. BOTTOM PANEL (Stationary Base) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[width, length]} />
+        <meshStandardMaterial {...matProps} side={2} />
+      </mesh>
 
-        {/* Front */}
-        <PacdoraHinge args={[w, h, 1]} position={[0, 0, l/2]} rotation={[angle, 0, 0]} color={color} />
-        
-        {/* Sides */}
-        <PacdoraHinge args={[l, h, 1]} position={[-w/2, 0, 0]} rotation={[0, -Math.PI/2, angle]} color={color} />
-        <PacdoraHinge args={[l, h, 1]} position={[w/2, 0, 0]} rotation={[0, Math.PI/2, angle]} color={color} />
-      </group>
+      {/* 2. BACK PANEL HINGE + TOP LID */}
+      <Hinge args={[width, height, 1]} position={[0, 0, -length / 2]} rotation={[-angle, 0, 0]} matProps={matProps}>
+        {/* LID: Hinged to the top edge of the back panel */}
+        <Hinge args={[width, 1, length]} position={[0, height, 0]} rotation={[-angle, 0, 0]} matProps={matProps} />
+      </Hinge>
 
-      <ContactShadows position={[0, -0.1, 0]} opacity={0.4} scale={20} blur={2.5} />
-    </Canvas>
+      {/* 3. FRONT PANEL HINGE */}
+      <Hinge args={[width, height, 1]} position={[0, 0, length / 2]} rotation={[angle, 0, 0]} matProps={matProps} />
+
+      {/* 4. LEFT PANEL HINGE */}
+      <Hinge args={[length, height, 1]} position={[-width / 2, 0, 0]} rotation={[0, -Math.PI / 2, angle]} matProps={matProps} />
+
+      {/* 5. RIGHT PANEL HINGE */}
+      <Hinge args={[length, height, 1]} position={[width / 2, 0, 0]} rotation={[0, Math.PI / 2, angle]} matProps={matProps} />
+    </group>
+  );
+};
+
+const Viewer3D = ({ dimensions, material, foldProgress }) => {
+  return (
+    <div style={{ width: '100%', height: '100%', cursor: 'grab' }}>
+      <Canvas shadows antialias="true">
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[12, 10, 12]} fov={35} />
+          <OrbitControls 
+            makeDefault 
+            enableDamping 
+            minDistance={5} 
+            maxDistance={25} 
+            maxPolarAngle={Math.PI / 1.8} 
+          />
+          
+          {/* Professional Lighting */}
+          <Environment preset="city" />
+          <ambientLight intensity={0.5} />
+          <spotLight 
+            position={[10, 20, 10]} 
+            angle={0.15} 
+            penumbra={1} 
+            intensity={1.5} 
+            castShadow 
+            shadow-mapSize={[1024, 1024]}
+          />
+
+          {/* The Box Model */}
+          <FoldableBox 
+            dimensions={dimensions} 
+            material={material} 
+            foldProgress={foldProgress} 
+          />
+
+          {/* Soft Ground Shadows */}
+          <ContactShadows 
+            position={[0, -0.05, 0]} 
+            opacity={0.35} 
+            scale={20} 
+            blur={2.5} 
+            far={4} 
+          />
+        </Suspense>
+      </Canvas>
+    </div>
   );
 };
 
